@@ -10,7 +10,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -26,20 +26,18 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 public class Robot extends TimedRobot {
 
   //sets up spark max motors
-  private final CANSparkMax left1 = new CANSparkMax(1, MotorType.kBrushless);
-  private final CANSparkMax left2 = new CANSparkMax(2, MotorType.kBrushless);
-  private final CANSparkMax right1 = new CANSparkMax(3, MotorType.kBrushless);
-  private final CANSparkMax right2 = new CANSparkMax(4, MotorType.kBrushless);
-  private final CANSparkMax intake = new CANSparkMax(5, MotorType.kBrushless);
-  private final CANSparkMax shooter = new CANSparkMax(6, MotorType.kBrushless);
+   CANSparkMax left1 = new CANSparkMax(1, MotorType.kBrushless);
+   CANSparkMax left2 = new CANSparkMax(2, MotorType.kBrushless);
+   CANSparkMax right1 = new CANSparkMax(3, MotorType.kBrushless);
+   CANSparkMax right2 = new CANSparkMax(4, MotorType.kBrushless);
+   CANSparkMax intake = new CANSparkMax(5, MotorType.kBrushless);
+   CANSparkMax shooter = new CANSparkMax(6, MotorType.kBrushless);
 
 
-  //sets drive motors into speed groups
-  private final SpeedController m_left = new SpeedControllerGroup(left1, left2);
-  private final SpeedController m_right = new SpeedControllerGroup(right1, right2);
+
 
   //sets up drivetrain
-  private final DifferentialDrive m_drive = new DifferentialDrive(m_left,m_right);
+  private final DifferentialDrive m_drive = new DifferentialDrive(left1,right1);
 
   //sets up encoders
   private final CANEncoder leftEncoder = new CANEncoder(left1);
@@ -48,7 +46,7 @@ public class Robot extends TimedRobot {
   private final CANEncoder shooterEncoder = new CANEncoder(shooter);
 
   //xbox controller
-  XboxController xBox;
+  private Joystick xBox;
 
   //enumerations
   public enum Enumerations{
@@ -67,6 +65,11 @@ Enumerations currentStage = Enumerations.kDone;
    */
   @Override
   public void robotInit() {
+
+    xBox = new Joystick(0);
+
+    left2.follow(left1);
+    right2.follow(right1);
 
     //zeroing encoders and setting stage
     currentStage = Enumerations.kShoot;
@@ -123,6 +126,41 @@ Enumerations currentStage = Enumerations.kDone;
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
+
+    if (currentStage == Enumerations.kShoot) {
+
+
+      shooter.set(-.6);
+
+      if (shooterEncoder.getPosition() < -50) {
+
+        shooter.set(0);
+
+        currentStage = Enumerations.kBackup;
+
+
+      }
+
+
+
+
+    }
+
+    if (currentStage == Enumerations.kBackup) {
+
+      m_drive.arcadeDrive(-.5,0);
+
+      if (leftEncoder.getPosition() < -100) {
+
+        m_drive.arcadeDrive(0,0);
+        currentStage = Enumerations.kDone;
+      }
+    }
+
+    if (currentStage == Enumerations.kDone) {
+
+      m_drive.arcadeDrive(0,0);
+    }
  
   }
 
@@ -142,22 +180,23 @@ Enumerations currentStage = Enumerations.kDone;
     double turnspeed = .5;
 
     //drivetrain
-    m_drive.arcadeDrive((xBox.getRawAxis(1) * drivespeed), (xBox.getRawAxis(5) * turnspeed));
+    m_drive.arcadeDrive((xBox.getRawAxis(1) * drivespeed *-1), (xBox.getRawAxis(4) * turnspeed));
 
     //RB Xbox button
     if (xBox.getRawButton(6)) {
 
-      shooter.set(1);
+      shooter.set(-1);
     }
     //LB Xbox button
     else if (xBox.getRawButton(5)) {
 
-      shooter.set(.6);
+      shooter.set(-.6);
     }
     //when no buttons are active
     else {
 
       intake.set(0);
+      shooter.set(0);
     }
 
   }
