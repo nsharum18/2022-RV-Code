@@ -4,16 +4,13 @@
 
 package frc.robot;
 
-import com.revrobotics.CANEncoder;
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-import edu.wpi.first.wpilibj.SpeedController;
-import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 
 
@@ -40,17 +37,19 @@ public class Robot extends TimedRobot {
   private final DifferentialDrive m_drive = new DifferentialDrive(left1,right1);
 
   //sets up encoders
-  private final CANEncoder leftEncoder = new CANEncoder(left1);
-  private final CANEncoder rightEncoder = new CANEncoder(right1);
-  private final CANEncoder intakeEncoder = new CANEncoder(intake);
-  private final CANEncoder shooterEncoder = new CANEncoder(shooter);
+  private RelativeEncoder leftEncoder;
+  private RelativeEncoder rightEncoder;
+  private RelativeEncoder intakeEncoder;
+  private RelativeEncoder shooterEncoder;
+
 
   //xbox controller
   private Joystick xBox;
 
   //enumerations
   public enum Enumerations{
-		
+    
+    kZero,
 		kShoot,
 		kBackup,
 		kDone;
@@ -66,20 +65,27 @@ Enumerations currentStage = Enumerations.kDone;
   @Override
   public void robotInit() {
 
+    //setting up joystick
     xBox = new Joystick(0);
 
+    //setting followers for drive motors
     left2.follow(left1);
     right2.follow(right1);
 
+    //finish setup for encoders
+    leftEncoder = left1.getEncoder();
+    rightEncoder = right1.getEncoder();
+    intakeEncoder = intake.getEncoder();
+    shooterEncoder = shooter.getEncoder();
+
     //zeroing encoders and setting stage
-    currentStage = Enumerations.kShoot;
+    currentStage = Enumerations.kZero;
     leftEncoder.setPosition(0);
     rightEncoder.setPosition(0);
     intakeEncoder.setPosition(0);
     shooterEncoder.setPosition(0);
 
 
-    
   }
 
   /**
@@ -91,6 +97,8 @@ Enumerations currentStage = Enumerations.kDone;
    */
   @Override
   public void robotPeriodic() {
+
+    //setting encoder values to smartdashboard
     SmartDashboard.putNumber("Left Encoder", leftEncoder.getPosition());
     SmartDashboard.putNumber("Right Encoder", rightEncoder.getPosition());
     SmartDashboard.putNumber("Intake Encoder", intakeEncoder.getPosition());
@@ -114,7 +122,7 @@ Enumerations currentStage = Enumerations.kDone;
   public void autonomousInit() {
 
     //zeroing encoders and setting stage
-    currentStage = Enumerations.kShoot;
+    currentStage = Enumerations.kZero;
     leftEncoder.setPosition(0);
     rightEncoder.setPosition(0);
     intakeEncoder.setPosition(0);
@@ -126,6 +134,21 @@ Enumerations currentStage = Enumerations.kDone;
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
+
+    if (currentStage == Enumerations.kZero) {
+
+      leftEncoder.setPosition(0);
+      rightEncoder.setPosition(0);
+      intakeEncoder.setPosition(0);
+      shooterEncoder.setPosition(0);
+
+      if (leftEncoder.getPosition() == 0 && rightEncoder.getPosition() == 0 && shooterEncoder.getPosition() == 0){
+
+        currentStage = Enumerations.kShoot;
+      }
+
+
+    }
 
     if (currentStage == Enumerations.kShoot) {
 
